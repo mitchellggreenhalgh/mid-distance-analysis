@@ -1,0 +1,74 @@
+---
+title: "Mid-Distance DB Analysis"
+author: "Mitchell Greenhalgh"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      fig.align = 'center')
+
+library(RSQLite)
+library(tidyverse)
+
+rm(list = ls())
+```
+
+```{r import-data}
+driver = dbDriver('SQLite')
+db_path = 'C:\\Users\\mitch\\Documents\\GitHub\\mid_distance_db\\middistanceDB_master.db'
+
+db = dbConnect(drv = driver,
+               dbname = db_path)
+
+d800 = dbReadTable(db, 'splits_800m')
+d400 = dbReadTable(db, 'splits_400m')
+```
+
+```{r visualize-800}
+loess800 = loess(total_time_sec ~ split_ratio, data = d800)
+
+pred_x = seq(min(d800$split_ratio), max(d800$split_ratio), by = 0.001)
+pred_y = predict(loess800, pred_x)
+
+# df = tibble(x = pred_x, y = pred_y)
+# 
+# ggplot(df, aes(x = x, y = y)) + 
+#     geom_line() + 
+#     theme_bw() + 
+#     theme(aspect.ratio = 1)
+
+# Global Minimum of LOESS Smoothing Function
+vline_1 = round(pred_x[which.min(pred_y)], 4)
+
+vline_2 = 1.0489  # Changepoint Analysis
+vline_3 = 1.0537  # Quadratic Model Minimum
+
+ggplot(d800, 
+       aes(x = split_ratio,
+           y = total_time_sec)) + 
+    geom_hex() +
+    geom_vline(xintercept = c(vline_1, vline_2, vline_3),
+               color = 'blue',
+               linewidth = 0.75) +
+    theme_bw() + 
+    theme(aspect.ratio = 1) + 
+    scale_fill_viridis_c(option = 'D')  # cividis = 'E'
+
+ggplot(d800, 
+       aes(x = split_ratio,
+           y = total_time_sec)) + 
+    geom_point(alpha = 0.5) +
+    geom_smooth(se = FALSE,
+                color = 'purple') +
+    geom_smooth(method = 'loess',
+                se = FALSE,
+                color = 'red') +
+    geom_vline(xintercept = c(vline_1, vline_2, vline_3),
+               color = 'blue',
+               linewidth = 0.75) +
+    theme_bw() + 
+    theme(aspect.ratio = 1)
+```
+
