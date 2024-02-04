@@ -81,6 +81,8 @@ knitr::opts_chunk$set(echo = FALSE,
 library(tidyverse)  # Pipelines, etc.
 library(ggfortify)  # Linear Model plotting in [ggplot]
 library(kableExtra)  # HTML table styling so it doesn't look like the R console
+library(segmented)
+library(RSQLite)
 
 rm(list = ls())
 
@@ -103,62 +105,33 @@ theme_sq <- theme_bw() + theme(aspect.ratio = 1)
 theme_wide <-  theme_bw() + theme(aspect.ratio = 1/1.618)
 ```
 
-```{r data-wrangling-800}
-library(segmented)
+```{r import-data}
+driver = dbDriver('SQLite')
+db_path = 'C:\\Users\\mitch\\Documents\\GitHub\\mid_distance_db\\middistanceDB_master.db'
 
-data2 <- read.csv("track800m.csv")
+db = dbConnect(drv = driver,
+               dbname = db_path)
 
-data2 <- data2 %>% mutate(ratio = lap_2 / lap_1)
-
-lapsFreq <- data2 %>% 
-  group_by(lap_1, lap_2) %>% 
-  summarise(freq = n()) %>% 
-  arrange(desc(freq))
-
-data3 <- left_join(data2, lapsFreq,
-                   by = c("lap_1", "lap_2"))
-
-laps <- data3 %>%
-  dplyr::select(athlete = runner, first_400 = lap_1, second_400 = lap_2, split_ratio = ratio) %>%
-  mutate(total_time_sec = first_400 + second_400) %>%
-  dplyr::select(athlete, first_400, second_400, total_time_sec, split_ratio)
-
-nbni <- read_csv('2023_nbni_800m.csv') %>% 
-  mutate(split_ratio = second_400 / first_400) %>%
-  dplyr::select(athlete, first_400, second_400, total_time_sec = time_sec, split_ratio)
-
-ncaa_east <- read_csv('2023_ncaa_east_prelims_800m.csv') %>%
-  mutate(split_ratio = second_400 / first_400) %>%
-  dplyr::select(time_sec, split_ratio)
-
-ncaa_west <- read_csv('2023_ncaa_west_prelims_800m.csv') %>%
-  mutate(split_ratio = second_400 / first_400) %>%
-  dplyr::select(time_sec, split_ratio)
-
-cooper <- laps
-  
-
-data_combined <- nbni %>% bind_rows(cooper)  # Not including ncaa prelims because it has too much championship racing biases; they're running more negative splits/altering race speed as part of strategy whereas the rest of the data are based on efforts to run as fast as possible
-
-# readr::write_csv(data_combined, '800m_data_combined_processed.csv')
+d800 = dbReadTable(db, 'splits_800m')
+d400 = dbReadTable(db, 'splits_400m')
 ```
 
 ```{r 800m-analysis}
-plot_800_smooth <- ggplot(data_combined, aes(x = split_ratio, y = total_time_sec)) +
+plot_800_smooth <- ggplot(d800, aes(x = split_ratio, y = total_time_sec)) +
   geom_point() + 
   geom_smooth() +
   theme_bw() + 
   theme(aspect.ratio = 1)
 
-model_800 <- lm(total_time_sec ~ split_ratio, data = data_combined)
-bpoint_800 <- segmented::segmented(model_800, npsi = 1)$psi[2]  # 1.049
+model_800 <- lm(total_time_sec ~ split_ratio, data = d800)
+bpoint_800 <- segmented::segmented(model_800, npsi = 1)$psi[2]  # 1.040
 
 
-plot_800_linear <- ggplot(data_combined, aes(x = split_ratio, y = total_time_sec)) + 
+plot_800_linear <- ggplot(d800, aes(x = split_ratio, y = total_time_sec)) + 
   geom_point() + 
-  geom_smooth(data = data_combined %>% filter(split_ratio <= bpoint_800),
+  geom_smooth(data = d800 %>% filter(split_ratio <= bpoint_800),
     method = 'lm', se = FALSE, size = 1.5) +
-  geom_smooth(data = data_combined %>% filter(split_ratio > bpoint_800),
+  geom_smooth(data = d800 %>% filter(split_ratio > bpoint_800),
     method = 'lm', se = FALSE, size = 1.5) +
   geom_vline(xintercept = c(bpoint_800), color = 'darkred', size = 1.5) +
   theme_bw() + 
@@ -196,8 +169,8 @@ Clearly, the goal is to run as close to an even split as possible, but even in D
 #### Quadratic Model
 
 ```{r quadratic-800}
-data_combined_quadr <- data_combined %>% mutate(split_ratio_2 = split_ratio**2)
-quadr_800_model <- lm(total_time_sec ~ split_ratio + split_ratio_2, data = data_combined_quadr)
+data_combined_quadr <- d800 %>% mutate(split_ratio_2 = split_ratio**2)
+quadr_800_model <- lm(total_time_sec ~ split_ratio + split_ratio_2 + I(split_ratio**3), data = data_combined_quadr)
 
 ratio_vals <- seq(min(data_combined_quadr$split_ratio), 
                   max(data_combined_quadr$split_ratio), 
@@ -214,7 +187,7 @@ print(paste('Approximate Global Minimum:', ratio_vals[which.min(predicted_vals)]
 
 
 ggplot() + 
-  geom_point(data = data_combined,
+  geom_point(data = d800,
              aes(x = split_ratio, y = total_time_sec),
              alpha = 0.75,
              color = 'darkgrey') + 
