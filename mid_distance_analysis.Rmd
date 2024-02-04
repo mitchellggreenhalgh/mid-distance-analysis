@@ -49,6 +49,7 @@ knitr::opts_chunk$set(echo = FALSE,
 library(RSQLite)
 library(tidyverse)
 library(segmented)
+library(patchwork)
 
 rm(list = ls())
 ```
@@ -138,19 +139,21 @@ plotting_800 = loess_800_df %>%
 
 
 # Hexbin Frequency Plot
-ggplot(d800, 
-       aes(x = split_ratio,
-           y = total_time_sec)) + 
+p800_1 = ggplot(d800,
+                aes(x = split_ratio,
+                    y = total_time_sec)) +
     geom_hex() +
-    theme_bw() + 
-    theme(aspect.ratio = 1) + 
+    theme_bw() +
+    theme(aspect.ratio = 1) +
+    theme(plot.title = element_text(hjust = 0.5)) +
     scale_fill_viridis_c(option = 'D') +   # cividis = 'E'
     labs(y = 'Total Time (seconds)',
-         x = 'Split Ratio')
+         x = 'Split Ratio',
+         title = 'Frequency Bins of 800m Performances\n(n = 1,813)')
 
 
 # Models plot
-ggplot() + 
+p800_2 = ggplot() + 
     geom_point(data = d800,
                aes(x = split_ratio,
                    y = total_time_sec),
@@ -178,9 +181,25 @@ ggplot() +
                        breaks = seq(0.9, 1.5, 0.1)) + 
     theme_bw() +
     theme(aspect.ratio = 1) + 
+    theme(plot.title = element_text(hjust = 0.5)) + 
     labs(y = 'Total Time (seconds)',
          x = 'Split Ratio',
-         color = 'Model')
+         color = 'Model',
+         title = '800m Models Predicted Values')
+
+combo_plot_800 = p800_1 +
+    p800_2 +
+    plot_layout(ncol = 1,
+                widths = unit(4, 'in'),
+                heights = unit(4, 'in'))
+
+ggsave(combo_plot_800, 
+       filename = '800m-plots.png',
+       width = 7,
+       height = 10,
+       units = 'in')
+
+knitr::include_graphics('800m-plots.png')
 ```
 
 ***
@@ -259,19 +278,21 @@ plotting_400 = loess_400_df %>%
 
 
 # Hexbin Frequency plot
-ggplot(d400, 
-       aes(x = split_ratio,
-           y = total_time_sec)) + 
+p400_1 = ggplot(d400,
+                aes(x = split_ratio,
+                    y = total_time_sec)) +
     geom_hex() +
-    theme_bw() + 
-    theme(aspect.ratio = 1) + 
+    theme_bw() +
+    theme(aspect.ratio = 1) +
+    theme(plot.title = element_text(hjust = 0.5)) +
     scale_fill_viridis_c(option = 'D') +   # cividis = 'E'
     labs(y = 'Total Time (seconds)',
-         x = 'Split Ratio')
+         x = 'Split Ratio',
+         title = 'Frequency Bins of 400m Performances\n(n = 1,065)')
 
 
 # Models plot
-ggplot() + 
+p400_2 = ggplot() + 
     geom_point(data = d400,
                aes(x = split_ratio,
                    y = total_time_sec),
@@ -298,7 +319,23 @@ ggplot() +
                        breaks = seq(0.9, 1.5, 0.1)) + 
     theme_bw() +
     theme(aspect.ratio = 1) + 
+    theme(plot.title = element_text(hjust = 0.5)) +
     labs(y = 'Total Time (seconds)',
          x = 'Split Ratio',
-         color = 'Model')
+         color = 'Model',
+         title = '400m Models Predicted Values')
+
+combo_plot_400 = p400_1 +
+    p400_2 +
+    plot_layout(ncol = 1,
+                widths = unit(4, 'in'),
+                heights = unit(4, 'in'))
+
+ggsave(combo_plot_400, 
+       filename = '400m-plots.png',
+       width = 7,
+       height = 10,
+       units = 'in')
+
+knitr::include_graphics('400m-plots.png')
 ```
