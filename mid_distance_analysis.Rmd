@@ -50,6 +50,7 @@ library(RSQLite)
 library(tidyverse)
 library(segmented)
 library(patchwork)
+library(glue)
 
 rm(list = ls())
 ```
@@ -137,6 +138,7 @@ poly_800_df = d800_poly_confint %>%
 plotting_800 = loess_800_df %>%
     bind_rows(poly_800_df)
 
+n_800 = nrow(d800)
 
 # Hexbin Frequency Plot
 p800_1 = ggplot(d800,
@@ -149,7 +151,7 @@ p800_1 = ggplot(d800,
     scale_fill_viridis_c(option = 'D') +   # cividis = 'E'
     labs(y = 'Total Time (seconds)',
          x = 'Split Ratio',
-         title = 'Frequency Bins of 800m Performances\n(n = 1,813)')
+         title = glue('Frequency Bins of 800m Performances\n(n = {format(n_800, big.mark = ",")})'))
 
 
 # Models plot
@@ -276,6 +278,8 @@ poly_400_df = d400_poly_confint %>%
 plotting_400 = loess_400_df %>%
     bind_rows(poly_400_df)
 
+n_400 = nrow(d400)
+
 
 # Hexbin Frequency plot
 p400_1 = ggplot(d400,
@@ -288,7 +292,7 @@ p400_1 = ggplot(d400,
     scale_fill_viridis_c(option = 'D') +   # cividis = 'E'
     labs(y = 'Total Time (seconds)',
          x = 'Split Ratio',
-         title = 'Frequency Bins of 400m Performances\n(n = 1,065)')
+         title = glue('Frequency Bins of 400m Performances\n(n = {format(n_400, big.mark = ",")})'))
 
 
 # Models plot
