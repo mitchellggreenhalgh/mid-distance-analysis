@@ -74,7 +74,7 @@ plot_density <- function(data, var, title) {
     ggplot(data, aes( x = {{var}})) + 
         geom_density(size = 1) + 
         theme_bw() + 
-        theme(aspect.ratio = 1 / 1.618) + 
+        theme(aspect.ratio = 1 / 1.618, plot.title = element_text(hjust = 0.5)) + 
         ggtitle(title)
 }
 
@@ -93,13 +93,42 @@ analyze_data <- function(data, event){
 
 analyze_data(d800, '800m')
 analyze_data(d400, '400m')
+
+range_stats <- function(data, lower, upper, event){
+    sum_stats = data %>% 
+        dplyr::select(total_time_sec, split_ratio) %>%
+        filter(total_time_sec > lower,
+               total_time_sec < upper) %>%
+        summarize(mean = mean(split_ratio),
+                  median = median(split_ratio),
+                  n = n()) %>%
+        print() %>%
+        pivot_longer(cols = c(mean, median))
+
+    data %>%
+        dplyr::select(total_time_sec, split_ratio) %>%
+        filter(total_time_sec > 150,
+               total_time_sec < 165) %>%
+        ggplot() +
+            geom_density(aes(x = split_ratio), size = 1) +
+            geom_vline(data = sum_stats, 
+                       aes(xintercept = value, color = name),
+                       size = 1) + 
+            labs(title = glue('Density Curve for {event} between\n {lower} seconds and {upper} seconds'),
+                 color = 'Central Tendency') + 
+            theme_bw() + 
+            theme(aspect.ratio = 1/1.618, plot.title = element_text(hjust = 0.5)) + 
+            scale_color_viridis_d()
+}
+
+# range_stats(d800, 155, 165, '800m')
 ```
 
 
 ### 800m Analysis
 
 ```{r 800m-models}
-# TODO: Functionize all of this so I can rerun the analyses specifically on different target race time ranges (e.g. find the optimal values for 2:35-2:45). Alternatively, could just predict the values for those ranges.
+# TODO: Functionize all of this so I can rerun the analyses specifically on different target race time ranges (e.g. find the optimal values for 2:35-2:45).
 
 # LOESS model
 loess800 = loess(total_time_sec ~ split_ratio, data = d800)
