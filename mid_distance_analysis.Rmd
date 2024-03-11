@@ -50,7 +50,8 @@ library(RSQLite)
 library(tidyverse)
 library(segmented)
 library(patchwork)
-library(glue)
+library(glue)  # Replicate Python f strings
+library(rlang)  # Custom tidyverse function / custom ggplot function
 
 rm(list = ls())
 ```
@@ -66,10 +67,40 @@ d800 = dbReadTable(db, 'splits_800m')
 d400 = dbReadTable(db, 'splits_400m')
 ```
 
+```{r EDA, include=FALSE}
+# Turn off include=FALSE if you want to run this EDA cell
+
+plot_density <- function(data, var, title) {
+    ggplot(data, aes( x = {{var}})) + 
+        geom_density(size = 1) + 
+        theme_bw() + 
+        theme(aspect.ratio = 1 / 1.618) + 
+        ggtitle(title)
+}
+
+analyze_data <- function(data, event){
+    # Plot the density of total time and split ratios
+    plot_density(data, total_time_sec, glue('Total Time Density {event}')) %>% print()
+    plot_density(data, split_ratio, glue('Split Ratio Density {event}')) %>% print()
+    
+    # Extract density information
+    ratio_plot = plot_density(data = data, var = split_ratio, NULL)
+    ratio_plot_density = ggplot_build(ratio_plot)
+    
+    # Make the max density x coordinate a singular named vector
+    setNames(ratio_plot_density$data[[1]]$x[which.max(ratio_plot_density$data[[1]]$density)], glue('Max Density Ratio {event}')) %>% print()  
+}
+
+analyze_data(d800, '800m')
+analyze_data(d400, '400m')
+```
+
 
 ### 800m Analysis
 
 ```{r 800m-models}
+# TODO: Functionize all of this so I can rerun the analyses specifically on different target race time ranges (e.g. find the optimal values for 2:35-2:45). Alternatively, could just predict the values for those ranges.
+
 # LOESS model
 loess800 = loess(total_time_sec ~ split_ratio, data = d800)
 
