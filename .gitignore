@@ -1,7 +1,8 @@
-.Rproj.user
-.Rhistory
-.RData
-.Ruserdata
-.Renviron
-.Rproj
+.Rproj.user/
+*.Rhistory
+*.RData
+*.Ruserdata
+*.Renviron
+*.Rproj
 *.html
+CoachV_summary.Rmd
